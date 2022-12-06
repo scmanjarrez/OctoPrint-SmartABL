@@ -1,7 +1,47 @@
-# SmartABL
+---
+layout: plugin
 
-Simple plugin to improve auto bed leveling, adding some conditions
-in order to minimize the number of ABLs triggered.
+id: SmartABL
+title: SmartABL
+description: Simple plugin to improve auto bed leveling, adding some conditions in order to minimize the number of ABLs triggered.
+authors:
+- Sergio C
+license: AGPLv3
+
+date: 2022-12-07
+
+homepage: https://github.com/scmanjarrez/OctoPrint-SmartABL
+source: https://github.com/scmanjarrez/OctoPrint-SmartABL
+archive: https://github.com/scmanjarrez/OctoPrint-SmartABL/archive/master.zip
+
+tags:
+- abl
+- auto bed leveling
+- bed level
+- bed leveling
+- leveling
+- bl-touch
+- mesh
+- probe
+- bilinear
+- marlin
+
+featuredimage: /assets/img/plugins/SmartABL/settings.png
+
+compatibility:
+  octoprint:
+  - 1.4.0
+  os:
+  - linux
+  - windows
+  - macos
+  - freebsd
+
+  python: ">=3,<4"
+
+---
+
+# SmartABL
 
 ## How it works?
 
@@ -18,13 +58,6 @@ References:
 
 Credits to [Oscar](https://3dprinting.stackexchange.com/a/15953/27154)
 for the idea.
-
-## Setup
-
-Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
-or manually using this URL:
-
-    https://github.com/scmanjarrez/OctoPrint-SmartABL/archive/master.zip
 
 ## Configuration
 
@@ -46,21 +79,12 @@ in the `prints` counter. Otherwise, only `PrintDone` (successful prints)
 are taken into account.
 
 <div align="center">
-    <img alt="Screenshot of SmartABL settings panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/settings.png" width="90%"></img>
+    <img alt="Screenshot of SmartABL settings panel" src="/assets/img/plugins/SmartABL/settings.png" width="90%">
 </div>
 
 ## Support me
 You find this plugin helpful and want to support me?
 
 <a href="https://ko-fi.com/Zuzumebachi">
-    <img alt="Ko-fi link to support me" src="plugins.octoprint.org/assets/img/plugins/SmartABL/kofi_button_red.png" width="25%"></img>
+    <img alt="Ko-fi link to support me" src="/assets/img/plugins/SmartABL/kofi_button_red.png" width="25%">
 </a>
-
-## License
-
-    SmartABL  Copyright (C) 2022 scmanjarrez.
-    This program comes with ABSOLUTELY NO WARRANTY; for details check below.
-    This is free software, and you are welcome to redistribute it
-    under certain conditions; check below for details.
-
-[LICENSE](LICENSE)

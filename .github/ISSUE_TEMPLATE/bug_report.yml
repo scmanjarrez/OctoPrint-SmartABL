@@ -11,7 +11,7 @@ body:
             * This may be done through the *Settings* > *OctoPrint* > *Logging* > *Logging Levels* section.
             * Select the "octoprint.plugins.SmartABL" name, and make sure Level is "DEBUG".
             * Save, then restart OctoPrint, which allows the developers to see debug information from the moment the plugin is loaded.
-          * Finally, when submitting a bug report, you **must** [include a Systeminfo Bundle](https://community.octoprint.org/t/what-is-a-systeminfo-bundle-and-how-can-i-obtain-one/29887), generated after the point the bug occurs. This allows the developers to examine the debug logs produced from your plugin installation.
+          * Finally, when submitting a bug report, you **must** [include a Systeminfo Bundle](https://community.octoprint.org/t/what-is-a-systeminfo-bundle-and-how-can-i-obtain-one/29887) and plugin_SmartABL.log, generated after the point the bug occurs. This allows the developers to examine the debug logs produced from your plugin installation.
 
         Thank you for your help!
   - type: textarea
@@ -73,6 +73,7 @@ body:
 
           * Systeminfo Bundle: See [here](https://community.octoprint.org/t/what-is-a-systeminfo-bundle-and-how-can-i-obtain-one/29887) if you don't know where to find that. Just attach down below as-is. Note that you'll need at least OctoPrint 1.6.0 for this to be available - we no longer accept bug reports created for older versions than this.
             * If you are reporting an issue that involves communicating with you printer, **be sure to enable `serial.log` before reproducing and creating the Systeminfo Bundle**!
+          * SmartABL log file: plugin_SmartABL.log
           * Your browser's JavaScript console, if you are reporting a problem with the
             user interface. See [here](https://webmasters.stackexchange.com/questions/8525/how-to-open-the-javascript-console-in-different-browsers) on where to find that.
           * If possible, screenshots or videos showing the problem, especially if you
