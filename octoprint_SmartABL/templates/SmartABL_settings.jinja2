@@ -1,0 +1,51 @@
+<form class="form-horizontal">
+  <h4>SmartABL Settings <small>Version {{ plugin_SmartABL_version }}</small></h4>
+  <div class="control-group">
+    <h5>Days</h5>
+
+    <div class="control-label">
+      <label>Force bed leveling</label>
+    </div>
+    <div class="controls">
+      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.force_days"/>
+    </div>
+    <br>
+
+    <div class="control-label">
+      <label>after</label>
+    </div>
+    <div class="controls">
+      <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.days, enable: settings.plugins.SmartABL.force_days"/>
+      <span class="add-on">day(s)</span>
+    </div>
+  </div>
+  <div class="control-group">
+    <h5>Prints</h5>
+
+    <div class="control-label">
+      <label>Force bed leveling</label>
+    </div>
+    <div class="controls">
+      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.force_prints"/>
+    </div>
+    <br>
+
+    <div class="control-label">
+      <label>after</label>
+    </div>
+    <div class="controls">
+      <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.prints, enable: settings.plugins.SmartABL.force_prints"/>
+      <span class="add-on">print(s)</span>
+    </div>
+  </div>
+  <div class="control-group">
+    <h5>Events</h5>
+
+    <div class="control-label">
+      <label>Take into account <code>PrintFailed</code></label>
+    </div>
+    <div class="controls">
+      <input type="checkbox" style="margin-top: 17px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.failed"/>
+    </div>
+  </div>
+</form>
