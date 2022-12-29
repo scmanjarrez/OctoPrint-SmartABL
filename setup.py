@@ -11,17 +11,17 @@ plugin_package = "octoprint_SmartABL"
 
 # The plugin's human readable name. Can be overwritten within OctoPrint's internal data via __plugin_name__ in the
 # plugin module
-plugin_name = "SmartABL"
+plugin_name = "OctoPrint-SmartABL"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "0.1.0"
+plugin_version = "0.1.1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
 plugin_description = """Simple plugin to improve auto bed leveling, adding some conditions in order to minimize the number of ABL triggered."""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Sergio C"
+plugin_author = "scmanjarrez"
 
 # The plugin's author's mail address.
 plugin_author_email = "serchiman@gmail.com"
