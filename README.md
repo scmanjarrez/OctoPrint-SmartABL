@@ -5,11 +5,12 @@ in order to minimize the number of ABLs triggered.
 
 ## How it works?
 
-The plugin replaces `G29` from ***.gcode** and check the bed mesh
+The plugin reads `G29*` from ***.gcode** and check the bed mesh
 in memory.
 - If mesh is updated, `M429 S1` is sent in order to load bed mesh from memory.
-- If mesh is outdated or doesn't exist, `G29` and `M500` are sent in order to
+- If mesh is outdated or doesn't exist, `G29*` and `M500` are sent in order to
 generate a new mesh and save it to eeprom, respectively.
+> *: By default, the same ABL command read from your file is sent to the printer.
 
 References:
 - [G29](https://marlinfw.org/docs/gcode/G029.html)
@@ -30,6 +31,11 @@ or manually using this URL:
 
 By default, SmartABL **does not change** the behaviour of the
 auto bed leveling. User *must* change default values in settings:
+
+**Leveling command**
+- **custom** (disabled): Ignore gcode read from file and send a
+custom gcode instead.
+- **command** (G29): Change the gcode sent to the printer.
 
 **Days**
 - **force** (disabled): Force bed mesh update if the `after days`

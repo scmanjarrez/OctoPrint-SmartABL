@@ -46,6 +46,8 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
     # SettingsPlugin
     def get_settings_defaults(self):
         return dict(
+            cmd_custom=False,
+            cmd_gcode='G29',
             force_days=False,
             days=1,
             force_prints=False,
@@ -56,7 +58,7 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
     # TemplatePlugin
     def get_template_configs(self):
         return [
-            dict(type="settings", custom_bindings=False)
+            dict(type='settings', custom_bindings=False)
         ]
 
     def get_template_vars(self):
@@ -67,19 +69,19 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
     # Hook: octoprint.plugin.softwareupdate.check_config
     def get_update_information(self):
         return {
-            "SmartABL": {
-                "displayName": self._plugin_name,
-                "displayVersion": self._plugin_version,
+            'SmartABL': {
+                'displayName': self._plugin_name,
+                'displayVersion': self._plugin_version,
 
                 # version check: github repository
-                "type": "github_release",
-                "user": "scmanjarrez",
-                "repo": "OctoPrint-SmartABL",
-                "current": self._plugin_version,
+                'type': 'github_release',
+                'user': 'scmanjarrez',
+                'repo': 'OctoPrint-SmartABL',
+                'current': self._plugin_version,
 
                 # update method: pip
-                "pip": ("https://github.com/scmanjarrez/OctoPrint-SmartABL/"
-                        "archive/{target_version}.zip",)
+                'pip': ('https://github.com/scmanjarrez/OctoPrint-SmartABL/'
+                        'archive/{target_version}.zip')
             }
         }
 
@@ -90,16 +92,19 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
             self._smartabl_logger.debug(
                 f"@queuing_gcode > {self._debug()}")
             if (self.state['first_time'] or not self.valid_mesh
-                    or (self._get('force_days', 'b')
-                        and self._diff_days() >= self._get('days'))
-                    or (self._get('force_prints', 'b')
-                        and self.state['prints'] >= self._get('prints'))):
+                    or (self._get('force_days')
+                        and self._diff_days() >= self._get('days', 'i'))
+                    or (self._get('force_prints')
+                        and self.state['prints'] >= self._get('prints', 'i'))):
+                rewrite = [self._get('cmd_gcode', 's')
+                           if self._get('cmd_custom')
+                           else cmd, 'M500']
                 self._smartabl_logger.debug(
-                    "@queuing_gcode:abl_trigger")
-                return ['G29', 'M500']
+                    f"@queuing_gcode:abl_trigger >> Sending {rewrite}")
+                return rewrite
             else:
                 self._smartabl_logger.debug(
-                    "@queuing_gcode:abl_skip")
+                    "@queuing_gcode:abl_skip >> Sending M420 S1")
                 return 'M420 S1'
         return cmd,
 
@@ -111,8 +116,7 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                 and gcode == 'M500'):
             self._smartabl_logger.debug(
                 f"@sent_gcode > {self._debug()} || Trigger(gcode={gcode})")
-            _tmp = ('first_time=False, ' if self.state['first_time']
-                    else '')
+            _tmp = ('first_time=False, ' if self.state['first_time'] else '')
             if self.state['first_time']:
                 self.state['first_time'] = False
             self.state['prints'] = 0
@@ -159,23 +163,25 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                     self.state['last_mesh'], '%d/%m/%Y').date()).days
 
     def _get(self, key, ktype='i'):
-        if ktype == 'b':
-            return self._settings.get_boolean([key])
-        return self._settings.get_int([key])
+        if ktype == 'i':
+            return self._settings.get_int([key])
+        elif ktype == 's':
+            return self._settings.get([key])
+        return self._settings.get_boolean([key])
 
     def _debug(self):
-        return (f"Settings(force_days={self._get('force_days', 'b')}, "
-                f"days={self._get('days')}, "
-                f"force_prints={self._get('force_prints', 'b')}, "
-                f"prints={self._get('prints')}), "
-                f"failed={self._get('failed', 'b')}) || "
+        return (f"Settings(force_days={self._get('force_days')}, "
+                f"days={self._get('days', 'i')}, "
+                f"force_prints={self._get('force_prints')}, "
+                f"prints={self._get('prints', 'i')}), "
+                f"failed={self._get('failed')}) || "
                 f"State(first_time={self.state['first_time']}, "
                 f"prints={self.state['prints']}, "
                 f"last_mesh={self.state['last_mesh']}) || "
                 f"Internal(valid_mesh={self.valid_mesh})")
 
     def _events(self):
-        return (('PrintDone',) if not self._get('failed', 'b')
+        return (('PrintDone',) if not self._get('failed')
                 else ('PrintDone', 'PrintFailed'))
 
     def _save(self):

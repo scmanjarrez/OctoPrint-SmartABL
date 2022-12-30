@@ -1,5 +1,28 @@
 <form class="form-horizontal">
   <h4>SmartABL Settings <small>Version {{ plugin_SmartABL_version }}</small></h4>
+
+  <div class="control-group">
+    <h5>Leveling command</h5>
+
+    <div class="control-label">
+      <label>Custom command</label>
+    </div>
+    <div class="controls">
+      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.cmd_custom"/>
+    </div>
+    <br>
+
+    <div class="control-label">
+      <label>Command</label>
+    </div>
+    <div class="controls">
+      <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.cmd_gcode, enable: settings.plugins.SmartABL.cmd_custom"/>
+    </div>
+    <div class="controls">
+      <span><small>Do not use semicolon in command</small></span>
+    </div>
+  </div>
+
   <div class="control-group">
     <h5>Days since last bed leveling</h5>
 
@@ -19,6 +42,7 @@
       <span class="add-on">day(s)</span>
     </div>
   </div>
+
   <div class="control-group">
     <h5>Prints since last bed leveling</h5>
 
@@ -38,6 +62,7 @@
       <span class="add-on">print(s)</span>
     </div>
   </div>
+
   <div class="control-group">
     <h5>Events</h5>
 
