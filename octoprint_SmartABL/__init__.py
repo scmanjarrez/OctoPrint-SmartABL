@@ -15,6 +15,7 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
         self.smart_logger = None
         self.state = None
         self.valid_mesh = False
+        self.already_saved = False
 
     # Plugin: Parent class
     def initialize(self):
@@ -96,6 +97,7 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                         and self._diff_days() >= self._get('days', 'i'))
                     or (self._get('force_prints')
                         and self.state['prints'] >= self._get('prints', 'i'))):
+                self.already_saved = False
                 rewrite = [self._get('cmd_gcode', 's')
                            if self._get('cmd_custom')
                            else cmd, 'M500']
@@ -103,6 +105,7 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                     f"@queuing_gcode:abl_trigger >> Sending {rewrite}")
                 return rewrite
             else:
+                self.already_saved = True
                 self._smartabl_logger.debug(
                     "@queuing_gcode:abl_skip >> Sending M420 S1")
                 return 'M420 S1'
@@ -113,9 +116,10 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                    gcode, *args, **kwargs):
         if (f'plugin:{self._plugin_name}' in kwargs['tags']
                 and 'source:file' in kwargs['tags']
-                and gcode == 'M500'):
+                and gcode == 'M500' and not self.already_saved):
             self._smartabl_logger.debug(
                 f"@sent_gcode > {self._debug()} || Trigger(gcode={gcode})")
+            self.already_saved = True
             _tmp = ('first_time=False, ' if self.state['first_time'] else '')
             if self.state['first_time']:
                 self.state['first_time'] = False
