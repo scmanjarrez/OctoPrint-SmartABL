@@ -7,10 +7,11 @@ import logging
 import json
 
 
-class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
-                     octoprint.plugin.AssetPlugin,
+class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
+                     octoprint.plugin.SimpleApiPlugin,
+                     octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.TemplatePlugin,
-                     octoprint.plugin.EventHandlerPlugin):
+                     octoprint.plugin.AssetPlugin):
     def __init__(self):
         self.smart_logger = None
         self.state = None
@@ -25,24 +26,59 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
             logging.Formatter('%(asctime)s %(message)s'))
         console_logging_handler.setLevel(logging.DEBUG)
         self._smartabl_logger = logging.getLogger(
-            f'octoprint.plugins.{self._plugin_name}')
+            f'octoprint.plugins.{self._identifier}')
         self._smartabl_logger.addHandler(console_logging_handler)
         self._smartabl_logger.propagate = False
 
         try:
             with open(f'{self.get_plugin_data_folder()}/state.json') as f:
                 self.state = json.load(f)
-            self._smartabl_logger.debug(
-                f"@initialize > {self._debug()}")
         except FileNotFoundError:
             self.state = dict(
                 first_time=True,
                 prints=0,
                 last_mesh=self._today()
             )
-            self._save()
+        if 'abl_always' not in self.state:
+            self.state['abl_always'] = False
+        self._save()
+        self._smartabl_logger.debug(
+                f"@initialize > {self._dbg()}")
+
+    # EventHandlerPlugin
+    def on_event(self, event, payload):
+        if event == 'ClientOpened':
             self._smartabl_logger.debug(
-                f"@initialize:state_new > {self._debug()}")
+                f"@on_event:frontend_conn > {self._dbgstate()}")
+            self._plugin_manager.send_plugin_message(
+                self._identifier,
+                dict(abl_always=self.state['abl_always']))
+        elif event in ('PrintStarted', 'PrintDone', 'PrintFailed'):
+            self._smartabl_logger.debug(
+                f"@on_event > Trigger(event={event}) || "
+                f"{self._dbgsettings()}")
+            if event == 'PrintStarted':
+                self._printer.commands('M420 V1')
+                self._smartabl_logger.debug(
+                    "@on_event:print_start >> Mesh query")
+            else:
+                if event in self._events():
+                    self.state['prints'] += 1
+                self._smartabl_logger.debug(
+                    f"@on_event:print_stop > {self._dbgstate()}")
+                self._save()
+
+    # SimpleApiPlugin
+    def get_api_commands(self):
+        return dict(
+            abl_always=['value']
+        )
+
+    def on_api_command(self, command, data):
+        self.state['abl_always'] = data['value']
+        self._save()
+        self._smartabl_logger.debug(
+            f"@on_api_command:update > {self._dbgstate()}")
 
     # SettingsPlugin
     def get_settings_defaults(self):
@@ -67,6 +103,13 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
             version=self._plugin_version
         )
 
+    # AssetPlugin
+    def get_assets(self):
+        return dict(
+            css=['css/SmartABL.css'],
+            js=['js/SmartABL.js']
+        )
+
     # Hook: octoprint.plugin.softwareupdate.check_config
     def get_update_information(self):
         return {
@@ -89,10 +132,14 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
     # Hook: octoprint.comm.protocol.gcode.queuing
     def queuing_gcode(self, comm_instance, phase, cmd, cmd_type,
                       gcode, *args, **kwargs):
-        if 'source:file' in kwargs['tags'] and gcode in ('G29', 'M420'):
+        if ('tags' in kwargs and kwargs['tags'] is not None
+                and 'source:file' in kwargs['tags']
+                and gcode in ('G29', 'M420')):
             self._smartabl_logger.debug(
-                f"@queuing_gcode > {self._debug()}")
-            if (self.state['first_time'] or not self.valid_mesh
+                f"@queuing_gcode > {self._dbg()}")
+            if (self.state['abl_always']
+                    or self.state['first_time']
+                    or not self.valid_mesh
                     or (self._get('force_days')
                         and self._diff_days() >= self._get('days', 'i'))
                     or (self._get('force_prints')
@@ -102,61 +149,47 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
                            if self._get('cmd_custom')
                            else cmd, 'M500']
                 self._smartabl_logger.debug(
-                    f"@queuing_gcode:abl_trigger >> Sending {rewrite}")
+                    f"@queuing_gcode:abl_trigger >> Sending {rewrite} > "
+                    f"{self._dbginternal()}")
                 return rewrite
             else:
                 self.already_saved = True
                 self._smartabl_logger.debug(
-                    "@queuing_gcode:abl_skip >> Sending M420 S1")
+                    "@queuing_gcode:abl_skip >> Sending M420 S1 > "
+                    f"{self._dbginternal()}")
                 return 'M420 S1'
         return cmd,
 
     # Hook: octoprint.comm.protocol.gcode.sent
     def sent_gcode(self, comm_instance, phase, cmd, cmd_type,
                    gcode, *args, **kwargs):
-        if (f'plugin:{self._plugin_name}' in kwargs['tags']
+        if ('tags' in kwargs and kwargs['tags'] is not None
+                and f'plugin:{self._identifier}' in kwargs['tags']
                 and 'source:file' in kwargs['tags']
                 and gcode == 'M500' and not self.already_saved):
             self._smartabl_logger.debug(
-                f"@sent_gcode > {self._debug()} || Trigger(gcode={gcode})")
+                f"@sent_gcode > Trigger(gcode={gcode}) || {self._dbg()}")
             self.already_saved = True
-            _tmp = ('first_time=False, ' if self.state['first_time'] else '')
             if self.state['first_time']:
                 self.state['first_time'] = False
             self.state['prints'] = 0
             self.state['last_mesh'] = self._today()
             self._save()
             self._smartabl_logger.debug(
-                f"@sent_gcode:mesh_update >> {_tmp}prints=0, "
-                f"last_mesh={self._today()}")
+                f"@sent_gcode:update > {self._dbgstate()} || "
+                f"{self._dbginternal()}")
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
         if 'Invalid mesh' in line:
             self.valid_mesh = False
             self._smartabl_logger.debug(
-                "@process_line:mesh_invalid >> valid_mesh=False")
+                f"@process_line:update > {self._dbginternal()}")
         elif 'Bilinear Leveling Grid:' in line:
             self.valid_mesh = True
             self._smartabl_logger.debug(
-                "@process_line:mesh_valid >> valid_mesh=True")
+                f"@process_line:update > {self._dbginternal()}")
         return line
-
-    # EventHandlerPlugin
-    def on_event(self, event, payload):
-        if event in ('PrintStarted', 'PrintDone', 'PrintFailed'):
-            self._smartabl_logger.debug(
-                f"@on_event > {self._debug()} || Trigger(event={event})")
-            if event == 'PrintStarted':
-                self._printer.commands('M420 V1')
-                self._smartabl_logger.debug(
-                    "@on_event:print_start >> Mesh query")
-            else:
-                if event in self._events():
-                    self.state['prints'] += 1
-                self._smartabl_logger.debug(
-                    f"@on_event:print_stop >> prints={self.state['prints']}")
-                self._save()
 
     def _today(self):
         return date.today().strftime('%d/%m/%Y')
@@ -173,16 +206,33 @@ class SmartABLPlugin(octoprint.plugin.SettingsPlugin,
             return self._settings.get([key])
         return self._settings.get_boolean([key])
 
-    def _debug(self):
-        return (f"Settings(force_days={self._get('force_days')}, "
+    def _dbg(self):
+        return (f"{self._dbgsettings()} || "
+                f"{self._dbgstate()} || "
+                f"{self._dbginternal()}")
+
+    def _dbgsettings(self):
+        return (f"Settings("
+                f"force_days={self._get('force_days')}, "
                 f"days={self._get('days', 'i')}, "
                 f"force_prints={self._get('force_prints')}, "
-                f"prints={self._get('prints', 'i')}), "
-                f"failed={self._get('failed')}) || "
-                f"State(first_time={self.state['first_time']}, "
+                f"prints={self._get('prints', 'i')}, "
+                f"failed={self._get('failed')}"
+                f")")
+
+    def _dbgstate(self):
+        return (f"State("
+                f"first_time={self.state['first_time']}, "
                 f"prints={self.state['prints']}, "
-                f"last_mesh={self.state['last_mesh']}) || "
-                f"Internal(valid_mesh={self.valid_mesh})")
+                f"last_mesh={self.state['last_mesh']}, "
+                f"abl_always={self.state['abl_always']}"
+                f")")
+
+    def _dbginternal(self):
+        return (f"Internal("
+                f"valid_mesh={self.valid_mesh}, "
+                f"already_saved={self.already_saved}"
+                f")")
 
     def _events(self):
         return (('PrintDone',) if not self._get('failed')

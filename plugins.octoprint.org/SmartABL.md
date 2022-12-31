@@ -65,10 +65,12 @@ for the idea.
 By default, SmartABL **does not change** the behaviour of the
 auto bed leveling. User *must* change default values in settings:
 
+### Settings panel
+
 **Leveling command**
-- **custom** (disabled): Ignore gcode read from file and send a
+- **custom** (disabled): Ignore gcode read from files and send a
 custom gcode instead.
-- **command** (G29): Change the gcode sent to the printer.
+- **command** (G29): Change the custom gcode sent to the printer.
 
 **Days**
 - **force** (disabled): Force bed mesh update if the `after days`
@@ -85,7 +87,19 @@ in the `prints` counter. Otherwise, only `PrintDone` (successful prints)
 are taken into account.
 
 <div align="center">
-    <img alt="Screenshot of SmartABL settings panel" src="/assets/img/plugins/SmartABL/settings.png" width="90%">
+    <img alt="Screenshot of SmartABL settings panel" src="/assets/img/plugins/SmartABL/settings.png" width="80%"></img>
+</div>
+
+### Side panel
+
+- **ABL Restricted**: Normal behaviour, the plugin chooses when to trigger ABL
+based on your settings.
+
+- **ABL Always**: Ignore settings; the plugin always trigger ABL. Handy when you
+need to force-update your mesh.
+
+<div align="center">
+    <img alt="Screenshot of SmartABL side panel" src="assets/img/plugins/SmartABL/sidepanel.png" width="30%"></img>
 </div>
 
 ## Support me
