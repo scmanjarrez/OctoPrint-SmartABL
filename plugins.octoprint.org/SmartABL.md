@@ -68,23 +68,20 @@ auto bed leveling. User *must* change default values in settings:
 ### Settings panel
 
 **Leveling command**
-- **custom** (disabled): Ignore gcode read from files and send a
-custom gcode instead.
-- **command** (G29): Change the custom gcode sent to the printer.
+- Ignore gcode read from files and send a custom gcode instead.
+Default: disabled (G29).
 
-**Days**
-- **force** (disabled): Force bed mesh update if the `after days`
-condition is met.
-- **after**(1): Days after last print before forcing mesh update.
+**Force bed leveling**
+- After `#` days. Default: disabled (1).
+- After `#` prints. Default: disabled (5).
+- If current print bed temperature is different from last print.
+Default: disabled.
+- If current print hotend temperature is different from last print.
+Default: disabled.
 
-**Prints**
-- **force** (disabled): Force bed mesh update if the `after prints` condition is met.
-- **after**(5): Prints completed before forcing mesh update.
-
-**Events**
-- **failed** (disabled): Take into account `PrintFailed` events
-in the `prints` counter. Otherwise, only `PrintDone` (successful prints)
-are taken into account.
+**Prints counter**
+- Take into account failed prints in the counter.
+Default: disabled (only successful prints increase the counter).
 
 <div align="center">
     <img alt="Screenshot of SmartABL settings panel" src="/assets/img/plugins/SmartABL/settings.png" width="80%"></img>

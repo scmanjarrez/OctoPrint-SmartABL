@@ -4,73 +4,73 @@
   <div class="control-group">
     <h5>Leveling command</h5>
 
-    <div class="control-label">
-      <label>Custom command</label>
-    </div>
+    <label class="control-label"></label>
     <div class="controls">
-      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.cmd_custom"/>
-    </div>
-    <br>
-
-    <div class="control-label">
-      <label>Command</label>
-    </div>
-    <div class="controls">
-      <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.cmd_gcode, enable: settings.plugins.SmartABL.cmd_custom"/>
-    </div>
-    <div class="controls">
-      <span><small>Do not use semicolon in command</small></span>
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 5px;" data-bind="checked: settings.plugins.SmartABL.cmd_custom"/>
+        Custom
+        <div class="input-append">
+          <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.cmd_gcode, enable: settings.plugins.SmartABL.cmd_custom"/>
+        </div>
+        <br>
+        <small>Do not use semicolon in command</small>
+      </label>
     </div>
   </div>
 
   <div class="control-group">
-    <h5>Days since last bed leveling</h5>
+    <h5>Force bed leveling</h5>
 
-    <div class="control-label">
-      <label>Force bed leveling</label>
-    </div>
+    <label class="control-label"></label>
     <div class="controls">
-      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.force_days"/>
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 7px;" data-bind="checked: settings.plugins.SmartABL.force_days"/>
+        After
+        <div class="input-append">
+          <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.days, enable: settings.plugins.SmartABL.force_days"/>
+          <span class="add-on smartabl-addon">day(s)</span>
+        </div>
+      </label>
     </div>
-    <br>
 
-    <div class="control-label">
-      <label>after</label>
-    </div>
+    <label class="control-label"></label>
     <div class="controls">
-      <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.days, enable: settings.plugins.SmartABL.force_days"/>
-      <span class="add-on">day(s)</span>
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 7px;" data-bind="checked: settings.plugins.SmartABL.force_prints"/>
+        After
+        <div class="input-append">
+          <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.prints, enable: settings.plugins.SmartABL.force_prints"/>
+          <span class="add-on smartabl-addon">print(s)</span>
+        </div>
+      </label>
+    </div>
+
+    <label class="control-label"></label>
+    <div class="controls">
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.bedtemp"/>
+        If bed temperature is different from last print
+      </label>
+    </div>
+
+    <label class="control-label"></label>
+    <div class="controls">
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.hetemp"/>
+        If hotend temperature is different from last print
+      </label>
     </div>
   </div>
 
   <div class="control-group">
-    <h5>Prints since last bed leveling</h5>
+    <h5>Prints counter</h5>
 
-    <div class="control-label">
-      <label>Force bed leveling</label>
-    </div>
+    <label class="control-label"></label>
     <div class="controls">
-      <input type="checkbox" style="margin-top: 7px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.force_prints"/>
-    </div>
-    <br>
-
-    <div class="control-label">
-      <label>after</label>
-    </div>
-    <div class="controls">
-      <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.prints, enable: settings.plugins.SmartABL.force_prints"/>
-      <span class="add-on">print(s)</span>
-    </div>
-  </div>
-
-  <div class="control-group">
-    <h5>Events</h5>
-
-    <div class="control-label">
-      <label>Take into account <code>PrintFailed</code></label>
-    </div>
-    <div class="controls">
-      <input type="checkbox" style="margin-top: 17px; margin-right: 5px;" data-bind="checked: settings.plugins.SmartABL.failed"/>
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.failed"/>
+        Take into account failed prints
+      </label>
     </div>
   </div>
 </form>

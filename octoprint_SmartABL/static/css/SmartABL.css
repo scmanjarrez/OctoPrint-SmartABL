@@ -6,3 +6,7 @@
 .smartabl-radio {
     width: 50%;
 }
+
+.smartabl-addon {
+    width: 50px !important;
+}

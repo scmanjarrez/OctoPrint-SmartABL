@@ -5,6 +5,7 @@ from datetime import date, datetime
 import octoprint.plugin
 import logging
 import json
+import re
 
 
 class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
@@ -12,11 +13,14 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.TemplatePlugin,
                      octoprint.plugin.AssetPlugin):
+    temp_regx = re.compile(r'M(?:140|104).*?S(\d+)')
+
     def __init__(self):
         self.smart_logger = None
         self.state = None
         self.valid_mesh = False
-        self.already_saved = False
+        self.cache = set()
+        self.force_temp = False
 
     # Plugin: Parent class
     def initialize(self):
@@ -41,6 +45,10 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
             )
         if 'abl_always' not in self.state:
             self.state['abl_always'] = False
+        if 'last_bedtemp' not in self.state:
+            self.state['last_bedtemp'] = 0
+        if 'last_hetemp' not in self.state:
+            self.state['last_hetemp'] = 0
         self._save()
         self._smartabl_logger.debug(
                 f"@initialize > {self._dbg()}")
@@ -58,6 +66,7 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                 f"@on_event > Trigger(event={event}) || "
                 f"{self._dbgsettings()}")
             if event == 'PrintStarted':
+                self.cache = set()
                 self._printer.commands('M420 V1')
                 self._smartabl_logger.debug(
                     "@on_event:print_start >> Mesh query")
@@ -89,7 +98,9 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
             days=1,
             force_prints=False,
             prints=5,
-            failed=False
+            failed=False,
+            bedtemp=False,
+            hetemp=False
         )
 
     # TemplatePlugin
@@ -138,13 +149,14 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
             self._smartabl_logger.debug(
                 f"@queuing_gcode > {self._dbg()}")
             if (self.state['abl_always']
+                    or self.force_temp
                     or self.state['first_time']
                     or not self.valid_mesh
                     or (self._get('force_days')
                         and self._diff_days() >= self._get('days', 'i'))
                     or (self._get('force_prints')
                         and self.state['prints'] >= self._get('prints', 'i'))):
-                self.already_saved = False
+                self.force_temp = False
                 rewrite = [self._get('cmd_gcode', 's')
                            if self._get('cmd_custom')
                            else cmd, 'M500']
@@ -153,7 +165,7 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                     f"{self._dbginternal()}")
                 return rewrite
             else:
-                self.already_saved = True
+                self.cache.add('M500')
                 self._smartabl_logger.debug(
                     "@queuing_gcode:abl_skip >> Sending M420 S1 > "
                     f"{self._dbginternal()}")
@@ -166,18 +178,42 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
         if ('tags' in kwargs and kwargs['tags'] is not None
                 and f'plugin:{self._identifier}' in kwargs['tags']
                 and 'source:file' in kwargs['tags']
-                and gcode == 'M500' and not self.already_saved):
+                and gcode in ('M140', 'M104', 'M500')):
             self._smartabl_logger.debug(
-                f"@sent_gcode > Trigger(gcode={gcode}) || {self._dbg()}")
-            self.already_saved = True
-            if self.state['first_time']:
-                self.state['first_time'] = False
-            self.state['prints'] = 0
-            self.state['last_mesh'] = self._today()
-            self._save()
-            self._smartabl_logger.debug(
-                f"@sent_gcode:update > {self._dbgstate()} || "
-                f"{self._dbginternal()}")
+                f"@sent_gcode > Trigger(cmd={cmd}) || {self._dbg()}")
+            if gcode in ('M140', 'M104') and gcode not in self.cache:
+                self.cache.add(gcode)
+                setting = 'bedtemp'
+                state = 'last_bedtemp'
+                if gcode == 'M104':
+                    setting = 'hetemp'
+                    state = 'last_hetemp'
+                try:
+                    temp = int(self.temp_regx.match(cmd).group(1))
+                except AttributeError:
+                    self._smartabl_logger.debug(
+                        f"@sent_gcode:parse_error > Trigger(cmd={cmd}) || "
+                        f"{self._dbg()}")
+                else:
+                    if (self._get(setting)
+                            and state in self.state
+                            and temp != self.state[state]):
+                        self.force_temp = True
+                    self.state[state] = temp
+                    self._save()
+                    self._smartabl_logger.debug(
+                        f"@sent_gcode:update > {self._dbgstate()} || "
+                        f"{self._dbginternal()}")
+            elif gcode == 'M500' and gcode not in self.cache:
+                self.cache.add(gcode)
+                if self.state['first_time']:
+                    self.state['first_time'] = False
+                self.state['prints'] = 0
+                self.state['last_mesh'] = self._today()
+                self._save()
+                self._smartabl_logger.debug(
+                    f"@sent_gcode:update > {self._dbgstate()} || "
+                    f"{self._dbginternal()}")
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
@@ -189,6 +225,10 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
             self.valid_mesh = True
             self._smartabl_logger.debug(
                 f"@process_line:update > {self._dbginternal()}")
+        # elif 'M420 S1.0 Z0.0' in line:
+        #     self.valid_mesh = True
+        #     self._smartabl_logger.debug(
+        #         f"@process_line:VIRTUALPRINTER > {self._dbginternal()}")
         return line
 
     def _today(self):
@@ -217,7 +257,9 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                 f"days={self._get('days', 'i')}, "
                 f"force_prints={self._get('force_prints')}, "
                 f"prints={self._get('prints', 'i')}, "
-                f"failed={self._get('failed')}"
+                f"failed={self._get('failed')}, "
+                f"bedtemp={self._get('bedtemp')}, "
+                f"hetemp={self._get('hetemp')}"
                 f")")
 
     def _dbgstate(self):
@@ -225,13 +267,16 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                 f"first_time={self.state['first_time']}, "
                 f"prints={self.state['prints']}, "
                 f"last_mesh={self.state['last_mesh']}, "
-                f"abl_always={self.state['abl_always']}"
+                f"abl_always={self.state['abl_always']}, "
+                f"last_bedtemp={self.state['last_bedtemp']}, "
+                f"last_hetemp={self.state['last_hetemp']}"
                 f")")
 
     def _dbginternal(self):
         return (f"Internal("
                 f"valid_mesh={self.valid_mesh}, "
-                f"already_saved={self.already_saved}"
+                f"cache={self.cache}, "
+                f"force_temp={self.force_temp}"
                 f")")
 
     def _events(self):
