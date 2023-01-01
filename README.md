@@ -75,7 +75,7 @@ You find this plugin helpful and want to support me?
 
 ## License
 
-    SmartABL  Copyright (C) 2022-2023 scmanjarrez.
+    OctoPrint-SmartABL  Copyright (C) 2022-2023 scmanjarrez.
     This program comes with ABSOLUTELY NO WARRANTY; for details check below.
     This is free software, and you are welcome to redistribute it
     under certain conditions; check below for details.
