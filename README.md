@@ -51,7 +51,7 @@ Default: disabled.
 Default: disabled (only successful prints increase the counter).
 
 <div align="center">
-    <img alt="Screenshot of SmartABL settings panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/settings.png" width="80%"></img>
+    <img alt="Screenshot of SmartABL settings panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/settings.png" width="80%">
 </div>
 
 ### Side panel
@@ -63,14 +63,14 @@ based on your settings.
 need to force-update your mesh.
 
 <div align="center">
-    <img alt="Screenshot of SmartABL side panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/sidepanel.png" width="30%"></img>
+    <img alt="Screenshot of SmartABL side panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/sidepanel.png" width="30%">
 </div>
 
 ## Support me
 You find this plugin helpful and want to support me?
 
 <a href="https://ko-fi.com/Zuzumebachi">
-    <img alt="Ko-fi link to support me" src="plugins.octoprint.org/assets/img/plugins/SmartABL/kofi_button_red.png" width="25%"></img>
+    <img alt="Ko-fi link to support me" src="plugins.octoprint.org/assets/img/plugins/SmartABL/kofi_button_red.png" width="25%">
 </a>
 
 ## License
