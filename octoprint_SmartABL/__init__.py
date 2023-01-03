@@ -196,7 +196,6 @@ class SmartABLPlugin(octoprint.plugin.EventHandlerPlugin,
                         f"{self._dbg()}")
                 else:
                     if (self._get(setting)
-                            and state in self.state
                             and temp != self.state[state]):
                         self.force_temp = True
                     self.state[state] = temp
