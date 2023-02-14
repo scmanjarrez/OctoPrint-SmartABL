@@ -12,10 +12,13 @@ $(function() {
         $(function() {
         	var btnGroupSmartABL = `<div id='job_smartABL' class='btn-group smartabl' data-toggle='buttons-radio'>
                                         <button id='smartABL_restricted' type='button' class='btn smartabl-radio'><i class='fa fa-crosshairs'></i><span> ABL Restricted</span></button>
+                                        <button id='smartABL_counter' class='btn btn-info disabled'>?</button>
                                         <button id='smartABL_always' type='button' class='btn smartabl-radio'><i class='fa fa-crosshairs'></i><span> ABL Always</span></button>
                                     </div>`;
             var btn_last_job = $('#job_print').parent().children().last();
             btn_last_job.after(btnGroupSmartABL);
+
+            var counter = $('#smartABL_counter')
 
             var restricted = $('#smartABL_restricted')
             restricted.click(function() {
@@ -53,10 +56,20 @@ $(function() {
                 if (plugin != PLUGIN_ID) {
                     return;
                 }
-                if (data.abl_always) {
-                    always.click();
+                if (data.abl_always !== undefined) {
+                    if (data.abl_always) {
+                        always.click();
+                    } else {
+                        restricted.click();
+                    }
+                } else if (data.abl_counter !== undefined) {
+                    counter.text(data.abl_counter[0].toString().concat("/", data.abl_counter[1]))
                 } else {
-                    restricted.click();
+                    new PNotify({
+						title: data.abl_notify[0],
+						text: data.abl_notify[1],
+						type: "error",
+					});
                 }
             }
         });
