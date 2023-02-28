@@ -14,7 +14,6 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
                      octoprint.plugin.TemplatePlugin):
     fw_metadata = {
         'marlin': {
-            'codename': 'Marlin',
             'abl': 'G29',
             'load': 'M420 S1',
             'info': ('M420 V1',
@@ -23,14 +22,12 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
             'save': 'M500'
         },
         'prusa': {
-            'codename': 'Prusa-Firmware',
             'abl': 'G80',
             'info': ('G81',
                      'Mesh bed leveling not active.',
                      'Measured points:')
         },
         'klipper': {
-            'codename': 'Klipper',
             'abl': 'BED_MESH_CALIBRATE',
             'info': ('BED_MESH_OUTPUT',
                      '// Bed has not been probed',
@@ -161,18 +158,20 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
     def process_line(self, comm_instance, line, *args, **kwargs):
         if self.firmware is None:
             if 'FIRMWARE_NAME' in line:
-                for fw_cn, fw_n in self._codenames():
-                    if fw_cn in line:
+                self._smartabl_logger.debug(
+                    f"@process_line:firmware >> {line}")
+                for fw_n in self.fw_metadata:
+                    if fw_n in line.lower()[:30]:  # Workaround to detect Prusa
                         self.firmware = fw_n
                         if self.firmware != 'marlin':
                             self.save_allowed = False
                             self.probed = False
                         self._smartabl_logger.debug(
-                            f"@process_line:firmware >> {fw_n}")
+                            f"@process_line:detected_firmware >> {fw_n}")
                         break
                 else:
                     self._smartabl_logger.debug(
-                        "@process_line:firmware >> Unknown")
+                        "@process_line:detected_firmware >> Unknown")
                     self._plugin_manager.send_plugin_message(
                         self._identifier, {
                             'abl_notify': ("SmartABL: disabled",
@@ -320,10 +319,6 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
         return (date.today() -
                 datetime.strptime(
                     self.state['last_mesh'], '%d/%m/%Y').date()).days
-
-    def _codenames(self):
-        return [(fw_d['codename'], fw_n)
-                for fw_n, fw_d in self.fw_metadata.items()]
 
     def _gcodes_abl(self):
         return ([fw['abl'] for fw in self.fw_metadata.values()] +
