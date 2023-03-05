@@ -46,7 +46,7 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
         self.cache = set()
         self.force_temp = False
         self.firmware = None
-        self.probed = False
+        self.probe_required = False
         self.save_allowed = True
 
     # Plugin: Parent class
@@ -54,7 +54,8 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
         console_logging_handler = logging.handlers.RotatingFileHandler(
             self._settings.get_plugin_logfile_path(), maxBytes=2*1024*1024)
         console_logging_handler.setFormatter(
-            logging.Formatter('%(asctime)s %(message)s'))
+            logging.Formatter(
+                f'%(asctime)s ({self._plugin_version}): %(message)s'))
         console_logging_handler.setLevel(logging.DEBUG)
         self._smartabl_logger = logging.getLogger(
             f'octoprint.plugins.{self._identifier}')
@@ -138,14 +139,14 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
         if (self.firmware is not None
                 and event in ('PrintStarted', 'PrintDone', 'PrintFailed')):
             self._smartabl_logger.debug(
-                f"@on_event > Trigger(event={event}) || "
-                f"{self._dbgsettings()}")
+                f"@on_event > Trigger(event={event}) || {self._dbg()}")
             if event == 'PrintStarted':
                 self.cache = set()
                 cmd = self.fw_metadata[self.firmware]['info'][0]
                 self._printer.commands(cmd)
                 self._smartabl_logger.debug(
-                    f"@on_event:print_start >> Mesh query(cmd={cmd})")
+                    f"@on_event:print_start >> Mesh query(cmd={cmd}) > "
+                    f"{self._dbginternal()}")
             else:
                 if event in self._events():
                     self.state['prints'] += 1
@@ -161,13 +162,15 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
                 self._smartabl_logger.debug(
                     f"@process_line:firmware >> {line}")
                 for fw_n in self.fw_metadata:
-                    if fw_n in line.lower()[:30]:  # Workaround to detect Prusa
+                    # Workaround to detect Prusa and not Marlin
+                    if fw_n in line.lower()[:30]:
                         self.firmware = fw_n
                         if self.firmware != 'marlin':
                             self.save_allowed = False
-                            self.probed = False
+                            self.probe_required = True
                         self._smartabl_logger.debug(
-                            f"@process_line:detected_firmware >> {fw_n}")
+                            f"@process_line:detected_firmware >> {fw_n} > "
+                            f"{self._dbginternal()}")
                         break
                 else:
                     self._smartabl_logger.debug(
@@ -206,8 +209,7 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
             self.state['last_mesh'] = self._today()
             self._save()
             self._smartabl_logger.debug(
-                f"@at_command:update_state > {self._dbgstate()} || "
-                f"{self._dbginternal()}")
+                f"@at_command:update_state > {self._dbgstate()}")
             self._update_frontend()
 
     # Hook: octoprint.comm.protocol.gcode.queuing
@@ -226,7 +228,7 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
                 self._smartabl_logger.debug(
                     f"@gcode_queuing:abl > {self._dbg()}")
                 if (self.state['abl_always']
-                        or not self.probed
+                        or self.probe_required
                         or self.force_temp
                         or self.state['first_time']
                         or not self.valid_mesh
@@ -249,7 +251,7 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
                     self._smartabl_logger.debug(
                         f"@gcode_queuing:abl_trigger >> Sending {rewrite} > "
                         f"{self._dbginternal()}")
-                    self.probed = True
+                    self.probe_required = False
                     return rewrite
                 else:
                     rewrite = [None]
@@ -373,7 +375,7 @@ class SmartABLPlugin(octoprint.plugin.AssetPlugin,
                 f"cache={self.cache}, "
                 f"force_temp={self.force_temp}, "
                 f"firmware={self.firmware}, "
-                f"probed={self.probed}, "
+                f"probe_required={self.probe_required}, "
                 f"save_allowed={self.save_allowed}"
                 f")")
 
