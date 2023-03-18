@@ -10,3 +10,20 @@
 .smartabl-addon {
     width: 50px !important;
 }
+
+/* fixes for themeify theme... */
+.themeify.material_ui_light .btn {
+    color: black;
+}
+
+.themeify.dyl .btn:active, .themeify.dyl .btn.active {
+    background-color: #ffc947;
+}
+
+.themeify.nighttime .btn:active, .themeify.nighttime .btn.active {
+    background-color: #656B76;
+}
+
+.themeify.nighttime .btn.disabled {
+    background-color: #64616e !important;
+}
