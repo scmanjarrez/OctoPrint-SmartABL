@@ -98,6 +98,10 @@ You find this plugin helpful and want to support me?
     <img alt="Ko-fi link to support me" src="plugins.octoprint.org/assets/img/plugins/SmartABL/kofi_button_red.png" width="25%">
 </a>
 
+## Acknowledgement
+Thank you [jneilliii](https://github.com/jneilliii) and [foosel](https://github.com/foosel)
+for your continuous help!
+
 ## License
 
     OctoPrint-SmartABL  Copyright (C) 2022-2023 scmanjarrez.

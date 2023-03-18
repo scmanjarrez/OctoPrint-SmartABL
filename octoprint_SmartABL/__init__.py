@@ -50,6 +50,8 @@ class SmartABLPlugin(
         self.firmware = None
         self.probe_required = False
         self.save_allowed = True
+        self.last_cmd = None
+        self.querying = False
 
     # Plugin: Parent class
     def initialize(self):
@@ -132,29 +134,116 @@ class SmartABLPlugin(
         elif event == "Disconnected":
             self.firmware = None
         if self.firmware is not None and event in (
-            "PrintStarted",
             "PrintDone",
             "PrintFailed",
         ):
             self._smartabl_logger.debug(
                 f"@on_event > Trigger(event={event}) || {self._dbg()}"
             )
-            if event == "PrintStarted":
-                self.cache = set()
-                cmd = self.fw_metadata[self.firmware]["info"][0]
-                self._printer.commands(cmd)
+            if event in self._events():
+                self.state["prints"] += 1
+            self._smartabl_logger.debug(
+                f"@on_event:print_stop > {self._dbgstate()}"
+            )
+            self._update_frontend()
+            self._save()
+
+    # Hook: octoprint.comm.protocol.gcode.queuing
+    def gcode_queuing(
+        self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
+    ):
+        if (
+            self.firmware is not None
+            and "tags" in kwargs
+            and kwargs["tags"] is not None
+            and "source:file" in kwargs["tags"]
+        ):
+            if self._get("cmd_ignore") and (
+                gcode in self._gcodes_ignore() or cmd in self._gcodes_ignore()
+            ):
                 self._smartabl_logger.debug(
-                    f"@on_event:print_start >> Mesh query(cmd={cmd}) > "
+                    f"@gcode_queuing:ignore >> "
+                    f"Trigger(cmd={cmd}, gcode={gcode}) || "
+                    f"{self._dbg()}"
+                )
+                return [None]
+            elif gcode == "G28":
+                self.cache = set()
+            elif gcode in self._gcodes_abl() or cmd in self._gcodes_abl():
+                self._printer.set_job_on_hold(True)
+                self.last_cmd = cmd
+                cmd = ["@SMARTABLQUERY"]
+                self._smartabl_logger.debug(
+                    f"@gcode_queuing:abl >> Sending {cmd} > {self._dbg()}"
+                )
+                return cmd
+        return [cmd]
+
+    # Hook: octoprint.comm.protocol.atcommand.sending
+    def at_command(
+        self, comm_instance, phase, cmd, parameters, tags=None, *args, **kwargs
+    ):
+        if cmd == "SMARTABLSAVE":
+            if self.state["first_time"]:
+                self.state["first_time"] = False
+            self.state["prints"] = 0
+            self.state["last_mesh"] = self._today()
+            self._save()
+            self._smartabl_logger.debug(
+                f"@at_command:save > {self._dbgstate()}"
+            )
+            self._update_frontend()
+        elif cmd == "SMARTABLQUERY":
+            self.querying = True
+            cmds = self.fw_metadata[self.firmware]["info"][0]
+            self._smartabl_logger.debug(
+                f"@at_command:query >> Mesh query(cmd={cmds}) > "
+                f"{self._dbginternal()}"
+            )
+            self._printer.commands(cmds)
+        elif cmd == "SMARTABLDECIDE":
+            cmds = None
+            if (
+                self.state["abl_always"]
+                or self.probe_required
+                or self.force_temp
+                or self.state["first_time"]
+                or not self.valid_mesh
+                or (
+                    self._get("force_days")
+                    and self._diff_days() >= self._get("days", "i")
+                )
+                or (
+                    self._get("force_prints")
+                    and self.state["prints"] >= self._get("prints", "i")
+                )
+            ):
+                self.force_temp = False
+                if self.last_cmd == "M420":
+                    cmds = [self.fw_metadata[self.firmware]["abl"]]
+                else:
+                    cmds = [self.last_cmd]
+                if self._get("cmd_custom"):
+                    cmds = self._gcodes_custom()
+                if self.save_allowed:
+                    self.cache.add(self.fw_metadata[self.firmware]["save"])
+                cmds.append("@SMARTABLSAVE")
+                self._smartabl_logger.debug(
+                    f"@at_command:decide >> ABL trigger >> Sending {cmds} > "
                     f"{self._dbginternal()}"
                 )
+                self.probe_required = False
             else:
-                if event in self._events():
-                    self.state["prints"] += 1
+                if self.save_allowed:
+                    cmds = [self.fw_metadata[self.firmware]["load"]]
                 self._smartabl_logger.debug(
-                    f"@on_event:print_stop > {self._dbgstate()}"
+                    f"@at_command:decide >> ABL skip >> Sending {cmds} > "
+                    f"{self._dbginternal()}"
                 )
-                self._update_frontend()
-                self._save()
+            if cmds is not None:
+                self._printer.commands(cmds)
+                self._printer.set_job_on_hold(False)
+                self.querying = False
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
@@ -193,102 +282,31 @@ class SmartABLPlugin(
         else:
             if "EEPROM disabled" in line:  # marlin eeprom disabled
                 self.save_allowed = False
-            elif self.fw_metadata[self.firmware]["info"][1] in line:
-                self.valid_mesh = False
-                self._smartabl_logger.debug(
-                    f"@process_line:invalid_mesh > {self._dbginternal()}"
-                )
-            elif self.fw_metadata[self.firmware]["info"][2] in line:
-                self.valid_mesh = True
-                self._smartabl_logger.debug(
-                    f"@process_line:valid_mesh > {self._dbginternal()}"
-                )
-            # elif 'M420 S1.0 Z0.0' in line:
+            elif (
+                self.fw_metadata[self.firmware]["info"][1] in line
+                or self.fw_metadata[self.firmware]["info"][2] in line
+            ) and self.querying:
+                cmd = "@SMARTABLDECIDE"
+                if self.fw_metadata[self.firmware]["info"][1] in line:
+                    self.valid_mesh = False
+                    self._smartabl_logger.debug(
+                        f"@process_line:invalid_mesh >> Sending {cmd} "
+                        f"> {self._dbginternal()}"
+                    )
+                else:
+                    self.valid_mesh = True
+                    self._smartabl_logger.debug(
+                        f"@process_line:valid_mesh >> Sending {cmd} "
+                        f"> {self._dbginternal()}"
+                    )
+                self._printer.commands(cmd)
+            # elif "M420 S1.0 Z0.0" in line:
             #     self.valid_mesh = True
             #     self._smartabl_logger.debug(
-            #         f"@process_line:VIRTUALPRINTER > "
-            #         f"{self._dbginternal()}")
+            #         f"@process_line:VIRTUALPRINTER > {self._dbginternal()}"
+            #     )
+            #     self._printer.commands("@SMARTABLDECIDE")
         return line
-
-    # Hook: octoprint.comm.protocol.atcommand.sending
-    def at_command(
-        self, comm_instance, phase, cmd, parameters, tags=None, *args, **kwargs
-    ):
-        if cmd == "SMARTABLSAVE":
-            if self.state["first_time"]:
-                self.state["first_time"] = False
-            self.state["prints"] = 0
-            self.state["last_mesh"] = self._today()
-            self._save()
-            self._smartabl_logger.debug(
-                f"@at_command:update_state > {self._dbgstate()}"
-            )
-            self._update_frontend()
-
-    # Hook: octoprint.comm.protocol.gcode.queuing
-    def gcode_queuing(
-        self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
-    ):
-        if (
-            self.firmware is not None
-            and "tags" in kwargs
-            and kwargs["tags"] is not None
-            and "source:file" in kwargs["tags"]
-        ):
-            if self._get("cmd_ignore") and (
-                gcode in self._gcodes_ignore() or cmd in self._gcodes_ignore()
-            ):
-                self._smartabl_logger.debug(
-                    f"@gcode_queuing:ignore >> "
-                    f"Trigger(cmd={cmd}, gcode={gcode}) > "
-                    f"{self._dbg()}"
-                )
-                return [None]
-            elif gcode in self._gcodes_abl() or cmd in self._gcodes_abl():
-                self._smartabl_logger.debug(
-                    f"@gcode_queuing:abl > {self._dbg()}"
-                )
-                if (
-                    self.state["abl_always"]
-                    or self.probe_required
-                    or self.force_temp
-                    or self.state["first_time"]
-                    or not self.valid_mesh
-                    or (
-                        self._get("force_days")
-                        and self._diff_days() >= self._get("days", "i")
-                    )
-                    or (
-                        self._get("force_prints")
-                        and self.state["prints"] >= self._get("prints", "i")
-                    )
-                ):
-                    self.force_temp = False
-                    if gcode == "M420":
-                        rewrite = [self.fw_metadata[self.firmware]["abl"]]
-                    else:
-                        rewrite = [cmd]
-                    if self._get("cmd_custom"):
-                        rewrite = self._gcodes_custom()
-                    if self.save_allowed:
-                        self.cache.add(self.fw_metadata[self.firmware]["save"])
-                    rewrite.append("@SMARTABLSAVE")
-                    self._smartabl_logger.debug(
-                        f"@gcode_queuing:abl_trigger >> Sending {rewrite} > "
-                        f"{self._dbginternal()}"
-                    )
-                    self.probe_required = False
-                    return rewrite
-                else:
-                    rewrite = [None]
-                    if self.save_allowed:
-                        rewrite = [self.fw_metadata[self.firmware]["load"]]
-                    self._smartabl_logger.debug(
-                        f"@gcode_queuing:abl_skip({self.firmware}) "
-                        f">> Sending {rewrite} > {self._dbginternal()}"
-                    )
-                    return rewrite
-        return [cmd]
 
     # Hook: octoprint.comm.protocol.gcode.sent
     def gcode_sent(
@@ -422,7 +440,9 @@ class SmartABLPlugin(
             f"force_temp={self.force_temp}, "
             f"firmware={self.firmware}, "
             f"probe_required={self.probe_required}, "
-            f"save_allowed={self.save_allowed}"
+            f"save_allowed={self.save_allowed}, "
+            f"last_cmd={self.last_cmd}, "
+            f"querying={self.querying}"
             f")"
         )
 
