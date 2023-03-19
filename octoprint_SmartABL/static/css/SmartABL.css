@@ -16,6 +16,18 @@
     color: black;
 }
 
+.themeify.material_ui_light .btn-success {
+    color: #fff;
+    border-color: #28a745 !important;
+    background-color: #28a745 !important;
+}
+
+.themeify.material_ui_light .btn-info {
+    color: #fff;
+    background-color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+}
+
 .themeify.dyl .btn:active, .themeify.dyl .btn.active {
     background-color: #ffc947;
 }
