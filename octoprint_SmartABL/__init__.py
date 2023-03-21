@@ -219,7 +219,7 @@ class SmartABLPlugin(
                 )
             ):
                 self.force_temp = False
-                if self.last_cmd == "M420":
+                if "M420" in self.last_cmd:
                     cmds = [self.fw_metadata[self.firmware]["abl"]]
                 else:
                     cmds = [self.last_cmd]
