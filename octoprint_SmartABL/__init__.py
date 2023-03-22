@@ -242,8 +242,8 @@ class SmartABLPlugin(
                 )
             if cmds is not None:
                 self._printer.commands(cmds)
-                self._printer.set_job_on_hold(False)
-                self.querying = False
+            self._printer.set_job_on_hold(False)
+            self.querying = False
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
