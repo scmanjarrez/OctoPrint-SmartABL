@@ -252,9 +252,10 @@ class SmartABLPlugin(
                 self._smartabl_logger.debug(
                     f"@process_line:firmware >> {line}"
                 )
+                idx = line.find("FIRMWARE_NAME")
                 for fw_n in self.fw_metadata:
                     # Workaround to detect Prusa and not Marlin
-                    if fw_n in line.lower()[:30]:
+                    if fw_n in line[idx:idx+30].lower():
                         self.firmware = fw_n
                         if self.firmware != "marlin":
                             self.save_allowed = False
