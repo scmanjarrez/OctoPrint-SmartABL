@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import json
 import logging
+import threading
 from datetime import date, datetime
 
 import octoprint.plugin
@@ -52,6 +53,8 @@ class SmartABLPlugin(
         self.save_allowed = True
         self.last_cmd = None
         self.querying = False
+        self.thread = None
+        self.event = None
 
     # Plugin: Parent class
     def initialize(self):
@@ -68,6 +71,8 @@ class SmartABLPlugin(
             f"octoprint.plugins.{self._identifier}"
         )
         self._smartabl_logger.addHandler(console_logging_handler)
+        # some users don't enable it, so it's better to enable it by default...
+        self._smartabl_logger.setLevel(logging.DEBUG)
         self._smartabl_logger.propagate = False
 
         try:
@@ -97,9 +102,9 @@ class SmartABLPlugin(
             custom_gcode="G29",
             cmd_ignore=False,
             ignore_gcode="",
-            force_days=False,
+            force_days=True,
             days=1,
-            force_prints=False,
+            force_prints=True,
             prints=5,
             failed=False,
             bedtemp=False,
@@ -171,6 +176,12 @@ class SmartABLPlugin(
                 self.cache = set()
             elif gcode in self._gcodes_abl() or cmd in self._gcodes_abl():
                 self._printer.set_job_on_hold(True)
+                if self.thread is None:
+                    self.thread = threading.Thread(
+                        target=self._unlock_queue, daemon=True
+                    )
+                    self.event = threading.Event()
+                    self.thread.start()
                 self.last_cmd = cmd
                 cmd = ["@SMARTABLQUERY"]
                 self._smartabl_logger.debug(
@@ -244,6 +255,10 @@ class SmartABLPlugin(
                 self._printer.commands(cmds)
             self._printer.set_job_on_hold(False)
             self.querying = False
+            if self.event is not None:
+                self.event.set()
+            self.thread = None
+            self.event = None
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
@@ -255,7 +270,7 @@ class SmartABLPlugin(
                 idx = line.find("FIRMWARE_NAME")
                 for fw_n in self.fw_metadata:
                     # Workaround to detect Prusa and not Marlin
-                    if fw_n in line[idx:idx+30].lower():
+                    if fw_n in line[idx : idx + 30].lower():
                         self.firmware = fw_n
                         if self.firmware != "marlin":
                             self.save_allowed = False
@@ -301,12 +316,12 @@ class SmartABLPlugin(
                         f"> {self._dbginternal()}"
                     )
                 self._printer.commands(cmd)
-            # elif "M420 S1.0 Z0.0" in line:
-            #     self.valid_mesh = True
-            #     self._smartabl_logger.debug(
-            #         f"@process_line:VIRTUALPRINTER > {self._dbginternal()}"
-            #     )
-            #     self._printer.commands("@SMARTABLDECIDE")
+            elif "M420 S1.0 Z0.0" in line:
+                self.valid_mesh = True
+                self._smartabl_logger.debug(
+                    f"@process_line:VIRTUALPRINTER > {self._dbginternal()}"
+                )
+                self._printer.commands("@SMARTABLDECIDE")
         return line
 
     # Hook: octoprint.comm.protocol.gcode.sent
@@ -463,6 +478,13 @@ class SmartABLPlugin(
             self._identifier,
             {"abl_counter": (self.state["prints"], self._get("prints", "i"))},
         )
+
+    def _unlock_queue(self):
+        if not self.event.wait(5):
+            self._smartabl_logger.debug(
+                "@unlock_queue >> Sending @SMARTABLDECIDE"
+            )
+            self._printer.commands("@SMARTABLDECIDE")
 
 
 __plugin_pythoncompat__ = ">=3.7,<4"

@@ -48,10 +48,6 @@ or manually using this URL:
     https://github.com/scmanjarrez/OctoPrint-SmartABL/archive/master.zip
 
 ## Configuration
-
-By default, SmartABL **does not change** the behaviour of the
-auto bed leveling. User *must* change default values in settings:
-
 ### Settings panel
 
 **Leveling command**
@@ -62,12 +58,12 @@ Default: disabled (G29).
 - Skip gcodes listed here.
 
 **Force bed leveling**
-- After `#` days. Default: disabled (1).
-- After `#` prints. Default: disabled (5).
+- After `#` days. Default: enabled (1).
+- After `#` prints. Default: enabled (5).
 - If current print bed temperature is different from last print.
-Default: disabled.
+Default: enabled.
 - If current print hotend temperature is different from last print.
-Default: disabled.
+Default: enabled.
 
 **Prints counter**
 - Take into account failed prints in the counter.
