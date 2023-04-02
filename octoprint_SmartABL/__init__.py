@@ -20,23 +20,27 @@ class SmartABLPlugin(
         "marlin": {
             "abl": "G29",
             "load": "M420 S1",
-            "info": ("M420 V1", "Invalid mesh", "Bilinear Leveling Grid:"),
+            "info": (
+                "M420 V1",
+                ["Invalid mesh"],
+                ["Bilinear Leveling Grid", "Bed Topography Report"],
+            ),
             "save": "M500",
         },
         "prusa": {
             "abl": "G80",
             "info": (
                 "G81",
-                "Mesh bed leveling not active.",
-                "Measured points:",
+                ["Mesh bed leveling not active"],
+                ["Measured points"],
             ),
         },
         "klipper": {
             "abl": "BED_MESH_CALIBRATE",
             "info": (
                 "BED_MESH_OUTPUT",
-                "// Bed has not been probed",
-                "// Mesh Leveling Probed Z positions:",
+                ["Bed has not been probed"],
+                ["Mesh Leveling Probed Z positions"],
             ),
         },
     }
@@ -298,30 +302,21 @@ class SmartABLPlugin(
         else:
             if "EEPROM disabled" in line:  # marlin eeprom disabled
                 self.save_allowed = False
-            elif (
-                self.fw_metadata[self.firmware]["info"][1] in line
-                or self.fw_metadata[self.firmware]["info"][2] in line
-            ) and self.querying:
+            elif self._line_mesh(line) and self.querying:
                 cmd = "@SMARTABLDECIDE"
-                if self.fw_metadata[self.firmware]["info"][1] in line:
-                    self.valid_mesh = False
-                    self._smartabl_logger.debug(
-                        f"@process_line:invalid_mesh >> Sending {cmd} "
-                        f"> {self._dbginternal()}"
-                    )
-                else:
-                    self.valid_mesh = True
-                    self._smartabl_logger.debug(
-                        f"@process_line:valid_mesh >> Sending {cmd} "
-                        f"> {self._dbginternal()}"
-                    )
-                self._printer.commands(cmd)
-            elif "M420 S1.0 Z0.0" in line:
-                self.valid_mesh = True
+                self.valid_mesh = self._valid_mesh(line)
                 self._smartabl_logger.debug(
-                    f"@process_line:VIRTUALPRINTER > {self._dbginternal()}"
+                    f"@process_line:"
+                    f"{'' if self.valid_mesh else 'in'}valid_mesh >> "
+                    f"Sending {cmd} > {self._dbginternal()}"
                 )
-                self._printer.commands("@SMARTABLDECIDE")
+                self._printer.commands(cmd)
+            # elif "M420 S1.0 Z0.0" in line:
+            #     self.valid_mesh = True
+            #     self._smartabl_logger.debug(
+            #         f"@process_line:VIRTUALPRINTER > {self._dbginternal()}"
+            #     )
+            #     self._printer.commands("@SMARTABLDECIDE")
         return line
 
     # Hook: octoprint.comm.protocol.gcode.sent
@@ -485,6 +480,21 @@ class SmartABLPlugin(
                 "@unlock_queue >> Sending @SMARTABLDECIDE"
             )
             self._printer.commands("@SMARTABLDECIDE")
+
+    def _line_mesh(self, line):
+        for text in self.fw_metadata[self.firmware]["info"][1]:
+            if text in line:
+                return True
+        for text in self.fw_metadata[self.firmware]["info"][2]:
+            if text in line:
+                return True
+        return False
+
+    def _valid_mesh(self, line):
+        for text in self.fw_metadata[self.firmware]["info"][2]:
+            if text in line:
+                return True
+        return False
 
 
 __plugin_pythoncompat__ = ">=3.7,<4"
