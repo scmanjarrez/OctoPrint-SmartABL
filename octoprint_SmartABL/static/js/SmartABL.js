@@ -12,7 +12,7 @@ $(function() {
         $(function() {
         	var btnGroupSmartABL = `<div id='job_smartABL' class='btn-group smartabl' data-toggle='buttons-radio'>
                                         <button id='smartABL_restricted' type='button' class='btn smartabl-radio'><i class='fa fa-crosshairs'></i><span> ABL Restricted</span></button>
-                                        <button id='smartABL_counter' class='btn btn-info disabled'>?</button>
+                                        <button id='smartABL_counter' class='btn btn-info smartabl-counter disabled'>?</button>
                                         <button id='smartABL_always' type='button' class='btn smartabl-radio'><i class='fa fa-crosshairs'></i><span> ABL Always</span></button>
                                     </div>`;
             var btn_last_job = $('#job_print').parent().children().last();

@@ -1,36 +1,43 @@
 <form class="form-horizontal">
-  <h4>SmartABL Settings <small>Version {{ plugin_SmartABL_version }}</small></h4>
+  <h4>SmartABL settings <small>Version {{ plugin_SmartABL_version }}</small></h4>
 
   <div class="control-group">
-    <h5>Leveling commands</h5>
+    <h5>GCODES</h5>
 
     <label class="control-label"></label>
     <div class="controls">
       <label class="checkbox">
-        <input type="checkbox" style="margin-top: 5px;" data-bind="checked: settings.plugins.SmartABL.cmd_custom"/>
-        Custom
+        <input type="checkbox" style="margin-top: 5px;" data-bind="checked: settings.plugins.SmartABL.trigger_custom"/>
+        Trigger custom gcode(s)
         <div class="input-append">
-          <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.custom_gcode, enable: settings.plugins.SmartABL.cmd_custom"/>
+          <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.trigger_gcode, enable: settings.plugins.SmartABL.trigger_custom"/>
         </div>
         <br>
-        <small>Multiple commands allowed, separate them with commas. Do not use semicolons</small>
+        <small>These commands will trigger SmartABL algorithm. Useful if you use macros instead of G29/G80/BED_MESH_CALIBRATE. Multiple commands allowed, separate them with commas. Don't use semicolons</small>
       </label>
     </div>
-  </div>
-
-  <div class="control-group">
-    <h5>Ignore gcodes</h5>
-
+    <label class="control-label"></label>
+    <div class="controls">
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 5px;" data-bind="checked: settings.plugins.SmartABL.abl_custom"/>
+        ABL custom gcode(s)
+        <div class="input-append">
+          <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.abl_gcode, enable: settings.plugins.SmartABL.abl_custom"/>
+        </div>
+        <br>
+        <small>These commands will be sent instead of G29/G80/BED_MESH_CALIBRATE. Multiple commands allowed, separate them with commas. Do not use semicolons</small>
+      </label>
+    </div>
     <label class="control-label"></label>
     <div class="controls">
       <label class="checkbox">
         <input type="checkbox" style="margin-top: 5px;" data-bind="checked: settings.plugins.SmartABL.cmd_ignore"/>
-        Ignore
+        Ignore gcode(s)
         <div class="input-append">
           <input class="input-xlarge" data-bind="value: settings.plugins.SmartABL.ignore_gcode, enable: settings.plugins.SmartABL.cmd_ignore"/>
         </div>
         <br>
-        <small>Separate commands with a comma</small>
+        <small>These commands will be ignored and not be sent to the printer. Multiple commands allowed, separate them with commas. Do not use semicolons</small>
       </label>
     </div>
   </div>

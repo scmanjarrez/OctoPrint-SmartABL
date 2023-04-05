@@ -102,8 +102,10 @@ class SmartABLPlugin(
     # SettingsPlugin
     def get_settings_defaults(self):
         return dict(
-            cmd_custom=False,
-            custom_gcode="G29",
+            trigger_custom=False,
+            trigger_gcode="G29",
+            abl_custom=False,
+            abl_gcode="G29",
             cmd_ignore=False,
             ignore_gcode="",
             force_days=True,
@@ -238,7 +240,7 @@ class SmartABLPlugin(
                     cmds = [self.fw_metadata[self.firmware]["abl"]]
                 else:
                     cmds = [self.last_cmd]
-                if self._get("cmd_custom"):
+                if self._get("abl_custom"):
                     cmds = self._gcodes_custom()
                 if self.save_allowed:
                     self.cache.add(self.fw_metadata[self.firmware]["save"])
@@ -273,16 +275,27 @@ class SmartABLPlugin(
                 )
                 idx = line.find("FIRMWARE_NAME")
                 for fw_n in self.fw_metadata:
-                    # Workaround to detect Prusa and not Marlin
-                    if fw_n in line[idx : idx + 30].lower():
-                        self.firmware = fw_n
-                        if self.firmware != "marlin":
+                    pattern = line[idx : idx + 40].lower()
+                    if fw_n in pattern:
+                        buddy = False
+                        if "buddy" in pattern:
+                            self.firmware = "marlin"
+                            buddy = True
+                        else:
+                            self.firmware = fw_n
+                        if self.firmware != "marlin" or buddy:
                             self.save_allowed = False
                             self.probe_required = True
-                        self._smartabl_logger.debug(
-                            f"@process_line:detected_firmware >> {fw_n} > "
-                            f"{self._dbginternal()}"
-                        )
+                        if buddy:
+                            self._smartabl_logger.debug(
+                                f"@process_line:detected_firmware >> "
+                                f"prusa-buddy > {self._dbginternal()}"
+                            )
+                        else:
+                            self._smartabl_logger.debug(
+                                f"@process_line:detected_firmware >> "
+                                f"{fw_n} > {self._dbginternal()}"
+                            )
                         break
                 else:
                     self._smartabl_logger.debug(
@@ -387,15 +400,24 @@ class SmartABLPlugin(
         ).days
 
     def _gcodes_abl(self):
-        return [fw["abl"] for fw in self.fw_metadata.values()] + [
-            self.fw_metadata["marlin"]["load"].split()[0]
-        ]
+        if self._get("trigger_custom"):
+            return [
+                gc.strip() for gc in self._get("trigger_gcode", "s").split(",")
+            ]
+        else:
+            if self.firmware != "marlin":
+                return [self.fw_metadata[self.firmware]["abl"]]
+            else:
+                return [
+                    self.fw_metadata[self.firmware]["abl"],
+                    self.fw_metadata[self.firmware]["load"].split()[0],
+                ]
 
     def _gcodes_temp(self):
         return [self.temp[tmp] for tmp in self.temp]
 
     def _gcodes_custom(self):
-        return [gc.strip() for gc in self._get("custom_gcode", "s").split(",")]
+        return [gc.strip() for gc in self._get("abl_gcode", "s").split(",")]
 
     def _gcodes_ignore(self):
         return [gc.strip() for gc in self._get("ignore_gcode", "s").split(",")]
@@ -417,9 +439,11 @@ class SmartABLPlugin(
     def _dbgsettings(self):
         return (
             f"Settings("
-            f"cmd_custom={self._get('cmd_custom')}, "
-            f"custom_gcode={self._get('custom_gcode', 's')}, "
-            f"cmd_ignore={self._get('cmd_custom')}, "
+            f"trigger_custom={self._get('trigger_custom')}, "
+            f"trigger_gcode={self._get('trigger_gcode', 's')}, "
+            f"abl_custom={self._get('abl_custom')}, "
+            f"abl_gcode={self._get('abl_gcode', 's')}, "
+            f"cmd_ignore={self._get('abl_custom')}, "
             f"ignore_gcode={self._get('ignore_gcode', 's')}, "
             f"force_days={self._get('force_days')}, "
             f"days={self._get('days', 'i')}, "
