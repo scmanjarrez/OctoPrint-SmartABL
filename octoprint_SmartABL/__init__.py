@@ -173,7 +173,7 @@ class SmartABLPlugin(
                 gcode in self._gcodes_ignore() or cmd in self._gcodes_ignore()
             ):
                 self._smartabl_logger.debug(
-                    f"@gcode_queuing:ignore >> "
+                    f"@gcode_queuing:ignore > "
                     f"Trigger(cmd={cmd}, gcode={gcode}) || "
                     f"{self._dbg()}"
                 )
@@ -181,6 +181,11 @@ class SmartABLPlugin(
             elif gcode == "G28":
                 self.cache = set()
             elif gcode in self._gcodes_abl() or cmd in self._gcodes_abl():
+                self._smartabl_logger.debug(
+                    f"@gcode_queuing:abl > "
+                    f"Trigger(cmd={cmd}, gcode={gcode}) || "
+                    f"{self._dbg()}"
+                )
                 self._printer.set_job_on_hold(True)
                 if self.thread is None:
                     self.thread = threading.Thread(
@@ -191,7 +196,7 @@ class SmartABLPlugin(
                 self.last_cmd = cmd
                 cmd = ["@SMARTABLQUERY"]
                 self._smartabl_logger.debug(
-                    f"@gcode_queuing:abl >> Sending {cmd} > {self._dbg()}"
+                    f"@gcode_queuing:abl_send >> Sending {cmd}"
                 )
                 return cmd
         return [cmd]
@@ -206,10 +211,20 @@ class SmartABLPlugin(
             self.state["prints"] = 0
             self.state["last_mesh"] = self._today()
             self._save()
-            self._smartabl_logger.debug(
-                f"@at_command:save > {self._dbgstate()}"
-            )
             self._update_frontend()
+            if self.save_allowed:
+                cmds = self.fw_metadata[self.firmware]["save"]
+                self._smartabl_logger.debug(
+                    f"@at_command:save >> Sending {cmds} > "
+                    f"{self._dbgstate()} || "
+                    f"{self._dbginternal()}"
+                )
+                self._printer.commands(cmds)
+            else:
+                self._smartabl_logger.debug(
+                    f"@at_command:save > {self._dbgstate()} || "
+                    f"{self._dbginternal()}"
+                )
         elif cmd == "SMARTABLQUERY":
             self.querying = True
             cmds = self.fw_metadata[self.firmware]["info"][0]
@@ -247,15 +262,18 @@ class SmartABLPlugin(
                 cmds.append("@SMARTABLSAVE")
                 self._smartabl_logger.debug(
                     f"@at_command:decide >> ABL trigger >> Sending {cmds} > "
-                    f"{self._dbginternal()}"
+                    f"{self._dbg()}"
                 )
                 self.probe_required = False
             else:
                 if self.save_allowed:
-                    cmds = [self.fw_metadata[self.firmware]["load"]]
+                    if self.last_cmd.startswith("M420 S1 Z"):
+                        cmds = [self.last_cmd]
+                    else:
+                        cmds = [self.fw_metadata[self.firmware]["load"]]
                 self._smartabl_logger.debug(
                     f"@at_command:decide >> ABL skip >> Sending {cmds} > "
-                    f"{self._dbginternal()}"
+                    f"{self._dbg()}"
                 )
             if cmds is not None:
                 self._printer.commands(cmds)
@@ -316,14 +334,14 @@ class SmartABLPlugin(
             if "EEPROM disabled" in line:  # marlin eeprom disabled
                 self.save_allowed = False
             elif self._line_mesh(line) and self.querying:
-                cmd = "@SMARTABLDECIDE"
+                cmds = "@SMARTABLDECIDE"
                 self.valid_mesh = self._valid_mesh(line)
                 self._smartabl_logger.debug(
                     f"@process_line:"
                     f"{'' if self.valid_mesh else 'in'}valid_mesh >> "
-                    f"Sending {cmd} > {self._dbginternal()}"
+                    f"Sending {cmds} > {self._dbginternal()}"
                 )
-                self._printer.commands(cmd)
+                self._printer.commands(cmds)
             # elif "M420 S1.0 Z0.0" in line:
             #     self.valid_mesh = True
             #     self._smartabl_logger.debug(
