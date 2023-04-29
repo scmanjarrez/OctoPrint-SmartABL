@@ -233,7 +233,8 @@ class SmartABLPlugin(
                 f"{self._dbginternal()}"
             )
             self._printer.commands(cmds)
-        elif cmd == "SMARTABLDECIDE":
+        elif cmd == "SMARTABLDECIDE" and cmd not in self.cache:
+            self.cache.add(cmd)
             cmds = None
             if (
                 self.state["abl_always"]
@@ -517,7 +518,7 @@ class SmartABLPlugin(
         )
 
     def _unlock_queue(self):
-        if not self.event.wait(5):
+        if not self.event.wait(15):
             self._smartabl_logger.debug(
                 "@unlock_queue >> Sending @SMARTABLDECIDE"
             )
