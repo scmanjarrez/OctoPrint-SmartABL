@@ -87,13 +87,24 @@
   </div>
 
   <div class="control-group">
-    <h5>Prints counter</h5>
+    <h5>Extras</h5>
 
     <label class="control-label"></label>
     <div class="controls">
       <label class="checkbox">
         <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.failed"/>
-        Take into account failed prints
+        Take into account failed/stopped jobs in prints counter
+      </label>
+    </div>
+
+    <label class="control-label"></label>
+    <div class="controls">
+      <label class="checkbox">
+        <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.force_unknown"/>
+        Enable SmartABL on unknown firmwares
+        <br>
+        <small>You have to enable and configure <code>Trigger custom gcode(s)</code> and <code>ABL custom gcode(s)</code>. If you don't configure these two settings,
+        SmartABL assumes marlin firmware by default (i.e. G29 read from file and G29 send to printer when ABL is needed)</small>
       </label>
     </div>
   </div>

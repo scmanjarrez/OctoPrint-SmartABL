@@ -115,6 +115,7 @@ class SmartABLPlugin(
             failed=False,
             bedtemp=False,
             hetemp=False,
+            force_unknown=False,
         )
 
     # SimpleApiPlugin
@@ -317,20 +318,28 @@ class SmartABLPlugin(
                             )
                         break
                 else:
-                    self._smartabl_logger.debug(
-                        "@process_line:detected_firmware >> Unknown"
-                    )
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier,
-                        {
-                            "abl_notify": (
-                                "SmartABL: disabled",
-                                "Unknown firmware. Open an Issue "
-                                "on GitHub indicating your "
-                                "firmware and logs.",
-                            )
-                        },
-                    )
+                    if self._get("force_unknown"):
+                        self.firmware = "marlin"
+                        self._smartabl_logger.debug(
+                            f"@process_line:detected_firmware >> "
+                            f"unknown* > {self._dbginternal()}"
+                        )
+                    else:
+                        self._smartabl_logger.debug(
+                            "@process_line:detected_firmware >> unknown"
+                        )
+                        self._plugin_manager.send_plugin_message(
+                            self._identifier,
+                            {
+                                "abl_notify": (
+                                    "SmartABL: disabled",
+                                    "Unknown firmware. Open an Issue "
+                                    "on GitHub indicating your "
+                                    "firmware and logs. Or force SmartABL"
+                                    "on unknown firmware, check settings for more info.",
+                                )
+                            },
+                        )
         else:
             if "EEPROM disabled" in line:  # marlin eeprom disabled
                 self.save_allowed = False
@@ -470,7 +479,8 @@ class SmartABLPlugin(
             f"prints={self._get('prints', 'i')}, "
             f"failed={self._get('failed')}, "
             f"bedtemp={self._get('bedtemp')}, "
-            f"hetemp={self._get('hetemp')}"
+            f"hetemp={self._get('hetemp')}, "
+            f"force_unknown={self._get('force_unknown')}"
             f")"
         )
 
