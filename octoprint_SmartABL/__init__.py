@@ -285,6 +285,16 @@ class SmartABLPlugin(
                 self.event.set()
             self.thread = None
             self.event = None
+        elif cmd == "SMARTABLRESET":
+            self.state["prints"] = 0
+            self.state["last_mesh"] = self._today()
+            self._save()
+            self._update_frontend()
+            self._smartabl_logger.debug(
+                f"@at_command:reset > "
+                f"{self._dbgstate()} || "
+                f"{self._dbginternal()}"
+            )
 
     # Hook: octoprint.comm.protocol.gcode.received
     def process_line(self, comm_instance, line, *args, **kwargs):
@@ -336,7 +346,8 @@ class SmartABLPlugin(
                                     "Unknown firmware. Open an Issue "
                                     "on GitHub indicating your "
                                     "firmware and logs. Or force SmartABL"
-                                    "on unknown firmware, check settings for more info.",
+                                    "on unknown firmware, check settings "
+                                    "for more info.",
                                 )
                             },
                         )

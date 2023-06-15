@@ -52,6 +52,9 @@ or manually using this URL:
     https://github.com/scmanjarrez/OctoPrint-SmartABL/archive/master.zip
 
 ## Configuration
+### Commands
+- `@SMARTABLRESET`: Send this command by terminal or gcode to zero the counter.
+
 ### Settings panel
 **GCODES**
 - Trigger custom gcode(s): By default, SmartABL only triggers with the standard ABL
