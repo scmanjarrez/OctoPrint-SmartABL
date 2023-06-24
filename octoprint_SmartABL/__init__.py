@@ -154,8 +154,13 @@ class SmartABLPlugin(
             )
             if event in self._events():
                 self.state["prints"] += 1
+            self._printer.set_job_on_hold(False)
+            if self.event is not None:
+                self.event.set()
+            self.thread = None
+            self.event = None
             self._smartabl_logger.debug(
-                f"@on_event:print_stop > {self._dbgstate()}"
+                f"@on_event:print_stop > {self._dbg()}"
             )
             self._update_frontend()
             self._save()
@@ -181,7 +186,10 @@ class SmartABLPlugin(
                 return [None]
             elif gcode == "G28":
                 self.cache = set()
-            elif gcode in self._gcodes_abl() or cmd in self._gcodes_abl():
+            elif (
+                gcode in self._gcodes_abl() or cmd in self._gcodes_abl()
+            ) and "SMARTABLQUERY" not in self.cache:
+                self.cache.add("SMARTABLQUERY")
                 self._smartabl_logger.debug(
                     f"@gcode_queuing:abl > "
                     f"Trigger(cmd={cmd}, gcode={gcode}) || "
