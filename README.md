@@ -1,5 +1,9 @@
 # SmartABL
-Simple plugin to reduce the number of ABLs triggered.
+Plugin designed to expedite your 3D printing process. It smartly reduces unnecessary
+Auto Bed Leveling (ABL) actions, letting you focus on what's important –
+your prints, not the prep time. Compatible with a wide array of 3D printing firmwares,
+SmartABL is perfect for anyone looking to enhance their printing efficiency,
+from hobbyists to professionals.
 
 ## How it works?
 The plugin reads `ABL_CMD`<sup>1</sup> from your print file and check the bed mesh
