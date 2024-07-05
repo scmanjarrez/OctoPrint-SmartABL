@@ -51,7 +51,7 @@
         <input type="checkbox" style="margin-top: 7px;" data-bind="checked: settings.plugins.SmartABL.force_days"/>
         After
         <div class="input-append">
-          <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.days, enable: settings.plugins.SmartABL.force_days"/>
+          <input class="input-mini text-right" type="number" min="0" step="1" data-bind="value: settings.plugins.SmartABL.days, enable: settings.plugins.SmartABL.force_days"/>
           <span class="add-on smartabl-addon">day(s)</span>
         </div>
       </label>
@@ -63,7 +63,7 @@
         <input type="checkbox" style="margin-top: 7px;" data-bind="checked: settings.plugins.SmartABL.force_prints"/>
         After
         <div class="input-append">
-          <input class="input-mini text-right" type="number" data-bind="value: settings.plugins.SmartABL.prints, enable: settings.plugins.SmartABL.force_prints"/>
+          <input class="input-mini text-right" type="number" min="0" step="1" data-bind="value: settings.plugins.SmartABL.prints, enable: settings.plugins.SmartABL.force_prints"/>
           <span class="add-on smartabl-addon">print(s)</span>
         </div>
       </label>
@@ -93,7 +93,7 @@
     <div class="controls">
       <label class="checkbox">
         <input type="checkbox" style="margin-top: 3px;" data-bind="checked: settings.plugins.SmartABL.failed"/>
-        Take into account failed/stopped jobs in prints counter
+        Take into account failed/stopped jobs in <code>prints counter</code>
       </label>
     </div>
 
@@ -104,7 +104,7 @@
         Enable SmartABL on unknown firmwares
         <br>
         <small>You have to enable and configure <code>Trigger custom gcode(s)</code> and <code>ABL custom gcode(s)</code>. If you don't configure these two settings,
-        SmartABL assumes marlin firmware by default (i.e. G29 read from file and G29 send to printer when ABL is needed)</small>
+        SmartABL assumes marlin firmware by default (i.e. G29 read from file and G29 sent to printer when ABL is needed)</small>
       </label>
     </div>
   </div>

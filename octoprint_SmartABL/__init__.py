@@ -186,6 +186,24 @@ class SmartABLPlugin(
                 return [None]
             elif gcode == "G28":
                 self.cache = set()
+                # If prusa, we need to send the PRUSA MBL V1 hidden command to re-enable the mesh and be able to query it
+                # also, we convert G28 W to skip ABL now and decide later if ABL is required, sending M80
+                if self.firmware == "prusa":
+                    orig = cmd
+                    if cmd == "G28":
+                        cmd = "G28 W"
+                    self._smartabl_logger.debug(
+                        f"@gcode_queuing:cache ([{cmd}, PRUSA MBL V1]) > "
+                        f"Trigger(cmd={orig}, gcode={gcode}) || "
+                        f"{self._dbg()}"
+                    )
+                    return [cmd, "PRUSA MBL V1"]
+                else:
+                    self._smartabl_logger.debug(
+                        f"@gcode_queuing:cache > "
+                        f"Trigger(cmd={cmd}, gcode={gcode}) || "
+                        f"{self._dbg()}"
+                    )
             elif (
                 gcode in self._gcodes_abl() or cmd in self._gcodes_abl()
             ) and "SMARTABLQUERY" not in self.cache:

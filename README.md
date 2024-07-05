@@ -91,7 +91,7 @@ Default: disabled.
   > You have to enable and configure <code>Trigger custom gcode(s)</code> and
   > <code>ABL custom gcode(s)</code>. If you don't configure these two settings,
   > SmartABL assumes marlin firmware by default (i.e. G29 read from file and
-  > G29 send to printer when ABL is needed)
+  > G29 sent to printer when ABL is needed)
 
 <div align="center">
     <img alt="Screenshot of SmartABL settings panel" src="plugins.octoprint.org/assets/img/plugins/SmartABL/settings.png" width="80%">
