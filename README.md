@@ -122,7 +122,7 @@ Thank you [jneilliii](https://github.com/jneilliii) and [foosel](https://github.
 for your continuous help!
 
 ## License
-    OctoPrint-SmartABL  Copyright (C) 2022-2024 scmanjarrez.
+    OctoPrint-SmartABL  Copyright (C) 2022-2025 scmanjarrez.
     This program comes with ABSOLUTELY NO WARRANTY; for details check below.
     This is free software, and you are welcome to redistribute it
     under certain conditions; check below for details.
